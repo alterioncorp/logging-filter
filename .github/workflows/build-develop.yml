@@ -1,0 +1,44 @@
+name: Build and Publish Snapshot
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop]
+
+jobs:
+  publish-snapshot:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - uses: alterioncorp/.github/.github/actions/maven-settings@main
+
+      - name: Publish Snapshot
+        run: mvn clean deploy -U -Pgithub-packages
+        env:
+          MAVEN_USERNAME: ${{ github.actor }}
+          MAVEN_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Save coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/jacoco.xml
+          retention-days: 1
+
+  upload-coverage:
+    needs: publish-snapshot
+    uses: alterioncorp/.github/.github/workflows/upload-coverage.yml@main
+    secrets:
+      codecov-token: ${{ secrets.CODECOV_TOKEN }}
