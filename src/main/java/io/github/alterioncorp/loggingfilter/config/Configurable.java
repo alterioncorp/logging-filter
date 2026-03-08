@@ -3,7 +3,6 @@ package io.github.alterioncorp.loggingfilter.config;
 /**
  * Lifecycle interface for configurable plugins.
  * 
- * @author alitovsky
  * @see Configuration
  */
 public interface Configurable {

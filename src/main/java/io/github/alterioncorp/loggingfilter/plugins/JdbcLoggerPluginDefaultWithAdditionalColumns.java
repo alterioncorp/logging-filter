@@ -11,7 +11,6 @@ import io.github.alterioncorp.loggingfilter.data.ResponseInfo;
 /**
  * Convenience superclass for applications that wish to append columns to the default implementation.
  * 
- * @author alitovsky
  *
  */
 public abstract class JdbcLoggerPluginDefaultWithAdditionalColumns extends JdbcLoggerPluginDefaultImpl {

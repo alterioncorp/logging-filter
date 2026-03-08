@@ -11,7 +11,6 @@ import jakarta.servlet.http.HttpServletRequest;
  * 	<li>{@link HttpServletRequest#getRemoteAddr()}</li>
  * </ol>
  * 
- * @author alitovsky
  *
  */
 class ClientIpResolverImpl implements ClientIpResolver {

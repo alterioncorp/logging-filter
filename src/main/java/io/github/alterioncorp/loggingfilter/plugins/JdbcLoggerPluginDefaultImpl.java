@@ -28,7 +28,6 @@ import io.github.alterioncorp.loggingfilter.loggers.JdbcLoggerImpl;
  * 	<li>SESSION_ID: JSESSIONID at the time of the response</li>
  * </ol>
  *
- * @author alitovsky
  *
  */
 public class JdbcLoggerPluginDefaultImpl implements JdbcLoggerPlugin {

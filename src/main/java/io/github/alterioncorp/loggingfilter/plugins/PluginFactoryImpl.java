@@ -2,6 +2,10 @@ package io.github.alterioncorp.loggingfilter.plugins;
 
 import io.github.alterioncorp.loggingfilter.config.Configurable;
 
+/**
+ * Reflection-based implementation of {@link PluginFactory} that instantiates plugins
+ * by loading their class and invoking the no-arg constructor.
+ */
 public final class PluginFactoryImpl implements PluginFactory {
 
 	@SuppressWarnings("unchecked")

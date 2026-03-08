@@ -2,6 +2,7 @@ package io.github.alterioncorp.loggingfilter.loggers;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -28,7 +29,6 @@ import io.github.alterioncorp.loggingfilter.plugins.Slf4JLoggerPluginDefaultImpl
  * 	<li>logging-filter.slf4j.plugin: the class of the {@link Slf4JLoggerPlugin} to use.  If not set, {@link Slf4JLoggerPluginDefaultImpl} will be used.</li>
  * </ul>
  * 
- * @author alitovsky
  * @see Slf4JLoggerPlugin
  * @see Slf4JLoggerPluginDefaultImpl
  *
@@ -125,14 +125,9 @@ public final class Slf4JLoggerImpl implements InfoLogger, InfoLoggerMXBean {
 	}
 	
 	private static String logDataToString(List<Object> valuesToLog) {
-		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < valuesToLog.size(); i++) {
-			if (i > 0) {
-				sb.append("\t");
-			}
-			sb.append(valuesToLog.get(i));
-		}
-		return sb.toString();
+		return valuesToLog.stream()
+				.map(String::valueOf)
+				.collect(Collectors.joining("\t"));
 	}
 
 	@Override

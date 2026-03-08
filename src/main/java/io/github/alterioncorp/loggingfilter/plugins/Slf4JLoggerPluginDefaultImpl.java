@@ -24,12 +24,11 @@ import io.github.alterioncorp.loggingfilter.data.ResponseInfo;
  * 	<li>Session ID (if the logging-filter.slf4j.show-session-id=true in init-params)</li>
  * </ol>
  * 
- * There following system-properties or filter init-params customize the behavior of this handler:
+ * The following system-properties or filter init-params customize the behavior of this handler:
  * <ul>
  * 	<li>logging-filter.slf4j.show-session-id (default=false): when true, the Session ID will be logged, or 'no-session' if no Session is established.</li>
  * </ul>
  * 
- * @author alitovsky
  *
  */
 public class Slf4JLoggerPluginDefaultImpl implements Slf4JLoggerPlugin {

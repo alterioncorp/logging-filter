@@ -15,7 +15,6 @@ import io.github.alterioncorp.loggingfilter.plugins.PluginFactoryImpl;
  * Superclass for logger implementations that need to queue up requests,
  * and to periodically log them in a batch (e.g. JDBC, Azure Tables).
  * 
- * @author alitovsky
  *
  * @param <T> the superclass of each logged property
  */
@@ -80,13 +79,14 @@ public abstract class AbstractBatchLogger<T> implements InfoLoggerMXBean, BatchL
 	}
 	
 	/**
-	 * 
+	 * Called after the plugin and queue have been initialized. Subclasses can override to perform additional setup.
+	 *
 	 * @param configuration a configuration instance
 	 */
 	protected abstract void onInit(Configuration configuration);
 
 	/**
-	 * 
+	 * Called after the queue and plugin have been destroyed. Subclasses can override to release additional resources.
 	 */
 	protected abstract void onDestroy();
 	

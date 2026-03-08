@@ -16,7 +16,6 @@ import io.github.alterioncorp.loggingfilter.loggers.JdbcLoggerImpl;
  * 
  * To add custom data, you should extend {@link JdbcLoggerPluginDefaultWithAdditionalColumns}.
  * 
- * @author alitovsky
  * @see JdbcLoggerPluginDefaultImpl
  * @see JdbcLoggerPluginDefaultWithAdditionalColumns
  * @see JdbcLoggerImpl

@@ -1,9 +1,9 @@
 package io.github.alterioncorp.loggingfilter;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.lang.management.ManagementFactory;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -49,7 +49,6 @@ import io.github.alterioncorp.loggingfilter.plugins.PluginFactoryImpl;
  * 	<li>logging-filter.param-names-to-hide: a comma-separated list of parameter names whose values should be masked (e.g. password).</li>
  * </ul>
  * 
- * @author alitovsky
  * @see InfoLogger
  * @see Slf4JLoggerImpl
  * @see AbstractBatchLogger
@@ -93,21 +92,15 @@ public final class LoggingFilter implements Filter {
 	public final void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
 			throws IOException, ServletException {
    	
-    	String requestIP = null;
-    	String method = null;
-    	String path = null;
-    	String params = null;
-    	String sessionId = null;
+ 		HttpServletRequest httpServletRequest = (HttpServletRequest)request;
+    	HttpServletResponse httpServletResponse = (HttpServletResponse)response;
     	int responseStatus;
 
-		HttpServletRequest httpServletRequest = (HttpServletRequest)request;
-    	HttpServletResponse httpServletResponse = (HttpServletResponse)response;
-
-    	requestIP = clientIpResolver.getClientIP(httpServletRequest);
-    	method = httpServletRequest.getMethod();
-        path = httpServletRequest.getRequestURI();
-    	params = requestParamsToString(httpServletRequest);
-    	sessionId = httpServletRequest.getSession(false) == null ? null : httpServletRequest.getSession().getId();
+    	String requestIP = clientIpResolver.getClientIP(httpServletRequest);
+    	String method = httpServletRequest.getMethod();
+    	String path = httpServletRequest.getRequestURI();
+    	String params = requestParamsToString(httpServletRequest);
+    	String sessionId = httpServletRequest.getSession(false) == null ? null : httpServletRequest.getSession().getId();
     	
     	RequestInfo requestInfo = new RequestInfo();
     	requestInfo.setStartTimestamp(new Date());
@@ -223,21 +216,17 @@ public final class LoggingFilter implements Filter {
         
         for (String name : request.getParameterMap().keySet()) {
         	for (String value : request.getParameterMap().get(name)) {
-                try {
-                	if (! firstParam) {
-                		sb.append("&");
-                	}
-	                sb.append(URLEncoder.encode(name, "UTF-8"));
-	                sb.append("=");
-                	if (paramNamesToHide.contains(name)) {
-                		sb.append(HIDDEN_PARAM_VALUE);
-                	} else {
-                		sb.append(URLEncoder.encode(value, "UTF-8"));
-                	}
-	                firstParam = false;
-                } catch (UnsupportedEncodingException ex) {
-                	// OK
-                }
+            	if (! firstParam) {
+            		sb.append("&");
+            	}
+                sb.append(URLEncoder.encode(name, StandardCharsets.UTF_8));
+                sb.append("=");
+            	if (paramNamesToHide.contains(name)) {
+            		sb.append(HIDDEN_PARAM_VALUE);
+            	} else {
+            		sb.append(URLEncoder.encode(value, StandardCharsets.UTF_8));
+            	}
+                firstParam = false;
         	}
         }
         

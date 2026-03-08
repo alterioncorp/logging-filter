@@ -9,7 +9,6 @@ import jakarta.servlet.FilterConfig;
  * 	<li>filter's init-params</li>
  * </ol>
  * 
- * @author alitovsky
  *
  */
 public interface Configuration {

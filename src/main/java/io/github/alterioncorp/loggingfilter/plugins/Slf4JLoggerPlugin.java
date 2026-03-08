@@ -16,7 +16,6 @@ import io.github.alterioncorp.loggingfilter.loggers.Slf4JLoggerImpl;
  * 
  * To add custom data, you should extend {@link Slf4JLoggerPluginDefaultImpl}.
  * 
- * @author alitovsky
  * @see Slf4JLoggerPluginDefaultImpl
  * @see Slf4JLoggerImpl
  *
@@ -35,8 +34,8 @@ public interface Slf4JLoggerPlugin extends Configurable {
 	
 	/**
 	 * Converts response data to a list of values to log.
-	 * 
-	 * @param info the requestInfo
+	 *
+	 * @param info the responseInfo
 	 * @param request the request
 	 * @param response the response
 	 * @return the list of data to log

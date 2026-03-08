@@ -11,7 +11,6 @@ import io.github.alterioncorp.loggingfilter.plugins.PluginLifecycle;
 /**
  * Super interface for all plugins.
  * 
- * @author alitovsky
  *
  */
 public interface BatchPlugin<T> extends PluginLifecycle, Configurable {
@@ -24,8 +23,8 @@ public interface BatchPlugin<T> extends PluginLifecycle, Configurable {
 	int getElementCount();
 	
 	/**
-	 * Return the values for.
-	 * 
+	 * Returns the values to log for a given request/response pair.
+	 *
 	 * @param requestInfo the requestInfo
 	 * @param responseInfo the responseInfo
 	 * @param request the request

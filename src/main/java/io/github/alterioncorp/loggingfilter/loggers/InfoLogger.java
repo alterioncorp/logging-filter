@@ -11,7 +11,6 @@ import io.github.alterioncorp.loggingfilter.jmx.InfoLoggerMXBean;
 /**
  * Interface for loggers of request and response data.
  * 
- * @author alitovsky
  *
  */
 public interface InfoLogger extends Configurable {

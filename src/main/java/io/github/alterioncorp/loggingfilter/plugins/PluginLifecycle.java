@@ -31,17 +31,17 @@ public interface PluginLifecycle {
 	
 	/**
 	 * Hook for subclasses - called at the beginning of {@link InfoLogger#logResponse(ResponseInfo, HttpServletRequest, HttpServletResponse)}
-
+	 *
 	 * @param responseInfo the responseInfo
 	 * @param request the request
 	 * @param response the response
 	 */
 	default void onLogResponseStart(ResponseInfo responseInfo, HttpServletRequest request, HttpServletResponse response) {
 	}
-	
+
 	/**
 	 * Hook for subclasses - called at the end of {@link InfoLogger#logResponse(ResponseInfo, HttpServletRequest, HttpServletResponse)}
-
+	 *
 	 * @param responseInfo the responseInfo
 	 * @param request the request
 	 * @param response the response

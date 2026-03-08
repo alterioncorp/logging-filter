@@ -38,7 +38,6 @@ import io.github.alterioncorp.loggingfilter.plugins.PluginFactory;
  * 	<li>logging-filter.batch.write_period_in_millis: how often (in milliseconds) the queued-up data will be written to the DB (default=5000ms).</li>
  * </ul>
  * 
- * @author alitovsky
  * @see JdbcLoggerPlugin
  * @see JdbcLoggerPluginDefaultImpl
  */
@@ -155,7 +154,7 @@ public final class JdbcLoggerImpl extends AbstractBatchLogger<Object> implements
 		
 		StringBuilder sql = new StringBuilder();
 		
-		sql.append("insert into " + this.getTableName() + "(\n");
+		sql.append("insert into ").append(this.getTableName()).append("(\n");
 		// assume that 0 is an identity column
 		for (int i = 1; i < plugin.getColumnCount(); i++) {
 			if (i > 1) {
@@ -182,12 +181,12 @@ public final class JdbcLoggerImpl extends AbstractBatchLogger<Object> implements
 		
 		StringBuilder sql = new StringBuilder();
 		sql.append(plugin.getTableExistsSqlPrefix(tableName));
-		sql.append("create table " + tableName + " (");
+		sql.append("create table ").append(tableName).append(" (");
 		for (int i = 0; i < plugin.getColumnCount(); i++) {
 			if (i > 0) {
 				sql.append(",");
 			}
-			sql.append("\n\t" + plugin.getColumnName(i) + " " + plugin.getColumnTypeForTableCreate(i));
+			sql.append("\n\t").append(plugin.getColumnName(i)).append(" ").append(plugin.getColumnTypeForTableCreate(i));
 		}
 		sql.append("\n)");
 		sql.append(plugin.getTableExistsSqlSuffix(tableName));

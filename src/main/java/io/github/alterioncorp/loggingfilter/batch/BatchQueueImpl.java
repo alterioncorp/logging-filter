@@ -16,6 +16,12 @@ import io.github.alterioncorp.loggingfilter.config.Configuration;
 import io.github.alterioncorp.loggingfilter.data.RequestInfo;
 import io.github.alterioncorp.loggingfilter.data.ResponseInfo;
 
+/**
+ * Default implementation of {@link BatchQueue} that accumulates request/response pairs in memory
+ * and flushes them to the logger at a configurable interval via a scheduled executor.
+ *
+ * @param <T> the type of each logged element
+ */
 public class BatchQueueImpl<T> implements BatchQueue<T> {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BatchQueueImpl.class);
@@ -27,7 +33,7 @@ public class BatchQueueImpl<T> implements BatchQueue<T> {
 	private BatchLogger<T> logger;
 	private final ThreadLocal<RequestInfo> threadLocal = new ThreadLocal<>();
 	private final ScheduledExecutorService executor;
-	private final List<T[]> queue = new LinkedList<>();
+	private List<T[]> queue = new LinkedList<>();
 	
 	public BatchQueueImpl() {
 		super();
@@ -78,18 +84,18 @@ public class BatchQueueImpl<T> implements BatchQueue<T> {
 		T[] data = plugin.getValues(requestInfo, responseInfo, request, response);
 		
 		// queue the data to be logged
-		synchronized (queue) {
-			queue.add(data);			
+		synchronized (this) {
+			queue.add(data);
 		}
 	}
 	
 	void logQueuedData() {
-		
+
 		try {
 			List<T[]> dataToLog;
-			synchronized (queue) {
-				dataToLog = new LinkedList<>(queue);
-				queue.clear();
+			synchronized (this) {
+				dataToLog = queue;
+				queue = new LinkedList<>();
 			}
 			
 			if (! dataToLog.isEmpty()) {
@@ -102,10 +108,6 @@ public class BatchQueueImpl<T> implements BatchQueue<T> {
 		}
 		catch (Exception e) {
 			LOGGER.error("Error writing batch.", e);
-		}
-		catch (Error e) {
-			LOGGER.error("Error writing batch.", e);
-			throw e;
 		}
 	}
 

@@ -5,7 +5,6 @@ import jakarta.servlet.http.HttpServletRequest;
 /**
  * Determines the IP that made this request.
  * 
- * @author alitovsky
  *
  */
 interface ClientIpResolver {
