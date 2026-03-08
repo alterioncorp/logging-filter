@@ -5,6 +5,12 @@ package io.github.alterioncorp.loggingfilter.data;
  */
 public abstract class BaseInfo {
 
+	/**
+	 * Creates a new instance.
+	 */
+	protected BaseInfo() {
+	}
+
 	private String clientNameOrAddress;
 	private String serverNameOrAddress;
 	private String method;
@@ -12,51 +18,110 @@ public abstract class BaseInfo {
 	private String paramsAsString;
 	private String sessionId;
 
-	/** @return the client IP address or hostname */
+	/**
+	 * Returns the client IP address or hostname.
+	 *
+	 * @return the client IP address or hostname
+	 */
 	public final String getClientNameOrAddress() {
 		return clientNameOrAddress;
 	}
-	/** @param clientHostOrIp the client IP address or hostname */
+
+	/**
+	 * Sets the client IP address or hostname.
+	 *
+	 * @param clientHostOrIp the client IP address or hostname
+	 */
 	public final void setClientNameOrAddress(String clientHostOrIp) {
 		this.clientNameOrAddress = clientHostOrIp;
 	}
-	/** @return the server IP address or hostname */
+
+	/**
+	 * Returns the server IP address or hostname.
+	 *
+	 * @return the server IP address or hostname
+	 */
 	public final String getServerNameOrAddress() {
 		return serverNameOrAddress;
 	}
-	/** @param serverHostOrIp the server IP address or hostname */
+
+	/**
+	 * Sets the server IP address or hostname.
+	 *
+	 * @param serverHostOrIp the server IP address or hostname
+	 */
 	public final void setServerNameOrAddress(String serverHostOrIp) {
 		this.serverNameOrAddress = serverHostOrIp;
 	}
-	/** @return the HTTP method (e.g. GET, POST) */
+
+	/**
+	 * Returns the HTTP method (e.g. GET, POST).
+	 *
+	 * @return the HTTP method
+	 */
 	public final String getMethod() {
 		return method;
 	}
-	/** @param method the HTTP method */
+
+	/**
+	 * Sets the HTTP method.
+	 *
+	 * @param method the HTTP method
+	 */
 	public final void setMethod(String method) {
 		this.method = method;
 	}
-	/** @return the request URI path */
+
+	/**
+	 * Returns the request URI path.
+	 *
+	 * @return the request URI path
+	 */
 	public final String getPath() {
 		return path;
 	}
-	/** @param path the request URI path */
+
+	/**
+	 * Sets the request URI path.
+	 *
+	 * @param path the request URI path
+	 */
 	public final void setPath(String path) {
 		this.path = path;
 	}
-	/** @return the URL-encoded query parameters */
+
+	/**
+	 * Returns the URL-encoded query parameters.
+	 *
+	 * @return the URL-encoded query parameters
+	 */
 	public final String getParamsAsString() {
 		return paramsAsString;
 	}
-	/** @param paramsAsString the URL-encoded query parameters */
+
+	/**
+	 * Sets the URL-encoded query parameters.
+	 *
+	 * @param paramsAsString the URL-encoded query parameters
+	 */
 	public final void setParamsAsString(String paramsAsString) {
 		this.paramsAsString = paramsAsString;
 	}
-	/** @return the HTTP session ID, or {@code null} if no session exists */
+
+	/**
+	 * Returns the HTTP session ID, or {@code null} if no session exists.
+	 *
+	 * @return the HTTP session ID, or {@code null} if no session exists
+	 */
 	public final String getSessionId() {
 		return sessionId;
 	}
-	/** @param sessionId the HTTP session ID */
+
+	/**
+	 * Sets the HTTP session ID.
+	 *
+	 * @param sessionId the HTTP session ID
+	 */
 	public final void setSessionId(String sessionId) {
 		this.sessionId = sessionId;
 	}

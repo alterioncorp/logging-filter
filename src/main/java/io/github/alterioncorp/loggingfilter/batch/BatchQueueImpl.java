@@ -35,11 +35,21 @@ public class BatchQueueImpl<T> implements BatchQueue<T> {
 	private final ScheduledExecutorService executor;
 	private List<T[]> queue = new LinkedList<>();
 	
+	/**
+	 * Creates a new instance with a single-threaded scheduled executor.
+	 */
 	public BatchQueueImpl() {
 		super();
 		this.executor = Executors.newSingleThreadScheduledExecutor();
 	}
 
+	/**
+	 * Creates a new instance with the given plugin, logger, and executor.
+	 *
+	 * @param plugin the plugin used to extract values from each request/response pair
+	 * @param logger the logger that receives flushed batches
+	 * @param executor the executor used to schedule periodic flushes
+	 */
 	public BatchQueueImpl(BatchPlugin<T> plugin, BatchLogger<T> logger, ScheduledExecutorService executor) {
 		super();
 		this.plugin = plugin;

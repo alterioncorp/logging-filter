@@ -27,14 +27,23 @@ public abstract class AbstractBatchLogger<T> implements InfoLoggerMXBean, BatchL
 	private BatchPlugin<T> plugin;
 	private volatile boolean enabled = true;
 	
+	/**
+	 * Creates a new instance using the default plugin factory and queue implementations.
+	 */
 	public AbstractBatchLogger() {
-		
+
 		super();
 
 		this.pluginFactory = new PluginFactoryImpl();
 		this.queue = new BatchQueueImpl<T>();
 	}
 
+	/**
+	 * Creates a new instance with the given plugin factory and queue, for use by subclasses.
+	 *
+	 * @param pluginFactory the factory used to instantiate the plugin
+	 * @param queue the queue used to accumulate records
+	 */
 	protected AbstractBatchLogger(PluginFactory pluginFactory, BatchQueue<T> queue) {
 		
 		super();

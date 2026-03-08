@@ -15,6 +15,12 @@ import io.github.alterioncorp.loggingfilter.data.ResponseInfo;
  */
 public abstract class JdbcLoggerPluginDefaultWithAdditionalColumns extends JdbcLoggerPluginDefaultImpl {
 
+	/**
+	 * Creates a new instance.
+	 */
+	protected JdbcLoggerPluginDefaultWithAdditionalColumns() {
+	}
+
 	@Override
 	public final int getColumnCount() {
 		return super.getColumnCount() + this.getAdditionalColumnCount();

@@ -7,6 +7,9 @@ import io.github.alterioncorp.loggingfilter.data.RequestInfo;
 import io.github.alterioncorp.loggingfilter.data.ResponseInfo;
 import io.github.alterioncorp.loggingfilter.loggers.InfoLogger;
 
+/**
+ * Lifecycle hooks called around each request and response logging event.
+ */
 public interface PluginLifecycle {
 	
 	/**

@@ -10,8 +10,8 @@ import io.github.alterioncorp.loggingfilter.plugins.PluginLifecycle;
 
 /**
  * Super interface for all plugins.
- * 
  *
+ * @param <T> the type of each logged element
  */
 public interface BatchPlugin<T> extends PluginLifecycle, Configurable {
 

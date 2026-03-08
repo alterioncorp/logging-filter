@@ -44,6 +44,9 @@ public final class Slf4JLoggerImpl implements InfoLogger, InfoLoggerMXBean {
 	private volatile boolean enabled = true;
 	private Configuration configuration;
 	
+	/**
+	 * Creates a new instance using the default SLF4J loggers and plugin factory.
+	 */
 	public Slf4JLoggerImpl() {
 		loggerRequest = LoggerFactory.getLogger(LoggingFilter.class.getName() + ".rqst");
 		loggerResponse = LoggerFactory.getLogger(LoggingFilter.class.getName() + ".resp");

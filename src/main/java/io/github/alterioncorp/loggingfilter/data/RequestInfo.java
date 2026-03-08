@@ -7,14 +7,28 @@ import java.util.Date;
  */
 public class RequestInfo extends BaseInfo {
 
+	/**
+	 * Creates a new instance.
+	 */
+	public RequestInfo() {
+	}
+
 	private Date startTimestamp;
 
-	/** @return the timestamp when the request was received */
+	/**
+	 * Returns the timestamp when the request was received.
+	 *
+	 * @return the timestamp when the request was received
+	 */
 	public final Date getStartTimestamp() {
 		return startTimestamp;
 	}
 
-	/** @param startTimestamp the timestamp when the request was received */
+	/**
+	 * Sets the timestamp when the request was received.
+	 *
+	 * @param startTimestamp the timestamp when the request was received
+	 */
 	public final void setStartTimestamp(Date startTimestamp) {
 		this.startTimestamp = startTimestamp;
 	}

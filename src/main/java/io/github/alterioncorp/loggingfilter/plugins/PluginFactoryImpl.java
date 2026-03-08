@@ -8,6 +8,12 @@ import io.github.alterioncorp.loggingfilter.config.Configurable;
  */
 public final class PluginFactoryImpl implements PluginFactory {
 
+	/**
+	 * Creates a new instance.
+	 */
+	public PluginFactoryImpl() {
+	}
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T extends Configurable> T getPlugin(Class<T> type, String name) {

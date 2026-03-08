@@ -31,9 +31,11 @@ import io.github.alterioncorp.loggingfilter.loggers.JdbcLoggerImpl;
  *
  */
 public class JdbcLoggerPluginDefaultImpl implements JdbcLoggerPlugin {
-	
+
+	/** Data-model version, appended to the table name. Increment when the schema changes. */
 	public static final String VERSION = "1";
-	
+
+	/** Ordered column names for the log table. */
 	public static final String[] COLUMN_NAMES = new String[] {
 			"ID",
 			"START_TIMESTAMP",
@@ -47,6 +49,7 @@ public class JdbcLoggerPluginDefaultImpl implements JdbcLoggerPlugin {
 			"SESSION_ID"
 	};
 	
+	/** {@link java.sql.Types} constants for each column, in the same order as {@link #COLUMN_NAMES}. */
 	public static final int[] COLUMN_SQL_TYPES = new int[] {
 			Types.BIGINT,
 			Types.TIMESTAMP,
@@ -60,6 +63,7 @@ public class JdbcLoggerPluginDefaultImpl implements JdbcLoggerPlugin {
 			Types.NVARCHAR
 	};
 	
+	/** DDL column type expressions for table creation, in the same order as {@link #COLUMN_NAMES}. */
 	public static final String[] COLUMN_TYPES_FOR_CREATE = new String[] {
 			"BIGINT NOT NULL IDENTITY(1,1) PRIMARY KEY",
 			"DATETIME",
@@ -72,6 +76,12 @@ public class JdbcLoggerPluginDefaultImpl implements JdbcLoggerPlugin {
 			"SMALLINT",
 			"NVARCHAR(256)"
 	};
+
+	/**
+	 * Creates a new instance.
+	 */
+	public JdbcLoggerPluginDefaultImpl() {
+	}
 
 	@Override
 	public void init(Configuration config) {

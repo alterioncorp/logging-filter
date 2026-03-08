@@ -33,9 +33,20 @@ import io.github.alterioncorp.loggingfilter.data.ResponseInfo;
  */
 public class Slf4JLoggerPluginDefaultImpl implements Slf4JLoggerPlugin {
 
+	/** Configuration property name that controls whether session IDs are included in log entries. */
 	protected static final String PARAM_SHOW_SESSION_ID = "logging-filter.slf4j.show-session-id";
+
+	/** Placeholder used in request entries where the response code is not yet known. */
 	protected static final String NO_RESPONSE_CODE = "---";
+
+	/** Value logged when no HTTP session exists at the time of the request or response. */
 	protected static final String NO_SESSION = "no-session";
+
+	/**
+	 * Creates a new instance.
+	 */
+	public Slf4JLoggerPluginDefaultImpl() {
+	}
 
 	private boolean showSessionId;
 
@@ -83,10 +94,20 @@ public class Slf4JLoggerPluginDefaultImpl implements Slf4JLoggerPlugin {
     	return valuesToLog;
 	}
 
+	/**
+	 * Returns whether session IDs are included in log entries.
+	 *
+	 * @return {@code true} if session IDs are logged
+	 */
 	public boolean isShowSessionId() {
 		return showSessionId;
 	}
 
+	/**
+	 * Sets whether session IDs are included in log entries.
+	 *
+	 * @param showSessionId {@code true} to include session IDs in log entries
+	 */
 	protected void setShowSessionId(boolean showSessionId) {
 		this.showSessionId = showSessionId;
 	}

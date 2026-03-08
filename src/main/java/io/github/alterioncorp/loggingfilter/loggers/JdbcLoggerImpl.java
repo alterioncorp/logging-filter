@@ -53,6 +53,9 @@ public final class JdbcLoggerImpl extends AbstractBatchLogger<Object> implements
 	private DataSource dataSource;
 	private JdbcLoggerPlugin plugin;
 	
+	/**
+	 * Creates a new instance using the default JNDI {@link InitialContext}.
+	 */
 	public JdbcLoggerImpl() {
 		
 		super();

@@ -71,6 +71,9 @@ public final class LoggingFilter implements Filter {
 	private Set<String> paramNamesToHide = new HashSet<>();
 	private String serverName;
 
+	/**
+	 * Creates a new instance with default dependencies.
+	 */
 	public LoggingFilter() {
 		super();
 		clientIpResolver = new ClientIpResolverImpl();
