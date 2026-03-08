@@ -65,8 +65,21 @@ Entries are logged at `INFO` level. Request headers are logged at `DEBUG` level.
 | `logging-filter.slf4j.plugin` | `Slf4JLoggerPluginDefaultImpl` | Plugin class to use |
 | `logging-filter.slf4j.show-session-id` | `false` | Include the HTTP session ID in each log entry |
 
-**Log format** (tab-separated): `clientIP  responseCode  METHOD  /path?params  [sessionId]`
-The request entry uses `---` as the response code placeholder.
+Each request/response pair produces two log entries (tab-separated) under the loggers `LoggingFilter.rqst` and `LoggingFilter.resp`:
+
+```
+2024-03-07 10:23:44.801 INFO  LoggingFilter.rqst - 192.168.1.42	---	POST	/api/users?role=admin
+2024-03-07 10:23:44.923 INFO  LoggingFilter.resp - 192.168.1.42	201	POST	/api/users?role=admin
+```
+
+With `logging-filter.param-names-to-hide=password` and `logging-filter.slf4j.show-session-id=true`:
+
+```
+2024-03-07 10:23:44.801 INFO  LoggingFilter.rqst - 192.168.1.42	---	POST	/login?username=alice&password=*****	A1B2C3D4E5F6
+2024-03-07 10:23:44.923 INFO  LoggingFilter.resp - 192.168.1.42	200	POST	/login?username=alice&password=*****	A1B2C3D4E5F6
+```
+
+Request headers are logged at `DEBUG` level when debug logging is enabled for those loggers. The request entry uses `---` as the response code placeholder.
 
 ### JDBC logger
 
@@ -78,7 +91,13 @@ The JDBC logger queues records in memory and writes them to the database in batc
 | `logging-filter.jdbc.plugin` | `JdbcLoggerPluginDefaultImpl` | Plugin class to use |
 | `logging-filter.batch.write_period_in_millis` | `5000` | How often (ms) the in-memory queue is flushed to the database |
 
-**Default table** (`REQUEST_LOG_1`):
+A sample row in the default table (`REQUEST_LOG_1`):
+
+| ID | START_TIMESTAMP | CLIENT_INFO | SERVER_INFO | METHOD | PATH | PARAMS | DURATION | RESPONSE_STATUS | SESSION_ID |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | 2024-03-07 10:23:44.801 | 192.168.1.42 | node-1 | POST | /api/users | role=admin | 122 | 201 | A1B2C3D4E5F6 |
+
+**Schema** (`REQUEST_LOG_1`):
 
 | Column | Type | Description |
 |---|---|---|
