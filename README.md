@@ -1,5 +1,8 @@
 # logging-filter
 
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+[![codecov](https://codecov.io/gh/alterioncorp/logging-filter/branch/main/graph/badge.svg)](https://codecov.io/gh/alterioncorp/logging-filter)
+
 A Jakarta Servlet filter that logs HTTP request/response pairs. Supports SLF4J and JDBC backends out of the box, with a plugin API for customization.
 
 ## Installation
