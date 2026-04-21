@@ -6,9 +6,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +22,7 @@ import io.github.alterioncorp.loggingfilter.data.ResponseInfo;
 public class BatchQueueImpl<T> implements BatchQueue<T> {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BatchQueueImpl.class);
-	
+
 	static final String PARAM_WRITE_PERIOD_IN_MILLIS = "logging-filter.batch.write_period_in_millis";
 	static final long DEFAULT_WRITE_PERIOD_IN_MILLIS = 5000;
 
@@ -34,7 +31,7 @@ public class BatchQueueImpl<T> implements BatchQueue<T> {
 	private final ThreadLocal<RequestInfo> threadLocal = new ThreadLocal<>();
 	private final ScheduledExecutorService executor;
 	private List<T[]> queue = new LinkedList<>();
-	
+
 	/**
 	 * Creates a new instance with a single-threaded scheduled executor.
 	 */
@@ -59,10 +56,10 @@ public class BatchQueueImpl<T> implements BatchQueue<T> {
 
 	@Override
 	public void init(Configuration config) {
-		
+
 		// determine how often to log to the DB
 		String writePeriodInMillisProperty = config.getConfigProperty(PARAM_WRITE_PERIOD_IN_MILLIS);
-		
+
 		long writePeriodInMillis = writePeriodInMillisProperty != null ?
 				Long.parseLong(writePeriodInMillisProperty) : DEFAULT_WRITE_PERIOD_IN_MILLIS;
 
@@ -76,29 +73,29 @@ public class BatchQueueImpl<T> implements BatchQueue<T> {
 	}
 
 	@Override
-	public void queueRequest(RequestInfo requestInfo, HttpServletRequest request, HttpServletResponse response) {
+	public void queueRequest(RequestInfo requestInfo) {
 		threadLocal.set(requestInfo);
 	}
 
 	@Override
-	public void queueResponse(ResponseInfo responseInfo, HttpServletRequest request, HttpServletResponse response) {
-		
+	public void queueResponse(ResponseInfo responseInfo) {
+
 		// get the requestInfo that was previously pushed in this thread
 		RequestInfo requestInfo = threadLocal.get();
 		if (requestInfo == null) {
 			throw new IllegalStateException("logRequest wasn't previously called from this thread.");
 		}
-		
+
 		threadLocal.remove();
-		
-		T[] data = plugin.getValues(requestInfo, responseInfo, request, response);
-		
+
+		T[] data = plugin.getValues(requestInfo, responseInfo);
+
 		// queue the data to be logged
 		synchronized (this) {
 			queue.add(data);
 		}
 	}
-	
+
 	void logQueuedData() {
 
 		try {
@@ -107,7 +104,7 @@ public class BatchQueueImpl<T> implements BatchQueue<T> {
 				dataToLog = queue;
 				queue = new LinkedList<>();
 			}
-			
+
 			if (! dataToLog.isEmpty()) {
 				LOGGER.debug("writing queued data: count=" + dataToLog.size());
 				logger.logBatch(dataToLog);

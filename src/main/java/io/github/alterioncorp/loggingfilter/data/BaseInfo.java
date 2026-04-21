@@ -1,5 +1,10 @@
 package io.github.alterioncorp.loggingfilter.data;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Base class holding common fields shared between request and response data.
  */
@@ -17,6 +22,8 @@ public abstract class BaseInfo {
 	private String path;
 	private String paramsAsString;
 	private String sessionId;
+	private Map<String, List<String>> headers = new HashMap<>();
+	private Map<String, String> attributes = new HashMap<>();
 
 	/**
 	 * Returns the client IP address or hostname.
@@ -124,5 +131,52 @@ public abstract class BaseInfo {
 	 */
 	public final void setSessionId(String sessionId) {
 		this.sessionId = sessionId;
+	}
+
+	/**
+	 * Returns the HTTP headers associated with this request or response.
+	 *
+	 * @return the headers map
+	 */
+	public final Map<String, List<String>> getHeaders() {
+		return headers;
+	}
+
+	/**
+	 * Sets the HTTP headers.
+	 *
+	 * @param headers the headers map
+	 */
+	public final void setHeaders(Map<String, List<String>> headers) {
+		this.headers = headers != null ? headers : new HashMap<>();
+	}
+
+	/**
+	 * Returns an unmodifiable view of the attributes map.
+	 *
+	 * @return the attributes map
+	 */
+	public final Map<String, String> getAttributes() {
+		return Collections.unmodifiableMap(attributes);
+	}
+
+	/**
+	 * Sets a single attribute value.
+	 *
+	 * @param key the attribute name
+	 * @param value the attribute value
+	 */
+	public final void setAttribute(String key, String value) {
+		this.attributes.put(key, value);
+	}
+
+	/**
+	 * Returns the value of the attribute with the given name.
+	 *
+	 * @param key the attribute name
+	 * @return the attribute value, or {@code null} if not set
+	 */
+	public final String getAttribute(String key) {
+		return attributes.get(key);
 	}
 }

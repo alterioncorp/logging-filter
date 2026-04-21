@@ -2,9 +2,6 @@ package io.github.alterioncorp.loggingfilter.plugins;
 
 import java.sql.Types;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
 import io.github.alterioncorp.loggingfilter.config.Configuration;
 import io.github.alterioncorp.loggingfilter.data.RequestInfo;
 import io.github.alterioncorp.loggingfilter.data.ResponseInfo;
@@ -13,7 +10,7 @@ import io.github.alterioncorp.loggingfilter.loggers.JdbcLoggerImpl;
 /**
  * Default plugin for {@link JdbcLoggerImpl}.
  * Applications that wish to add columns should subclass {@link JdbcLoggerPluginDefaultWithAdditionalColumns} instead.
- * 
+ *
  * Each record will contain the following columns:
  * <ol>
  * 	<li>ID: auto-generated identity</li>
@@ -48,7 +45,7 @@ public class JdbcLoggerPluginDefaultImpl implements JdbcLoggerPlugin {
 			"RESPONSE_STATUS",
 			"SESSION_ID"
 	};
-	
+
 	/** {@link java.sql.Types} constants for each column, in the same order as {@link #COLUMN_NAMES}. */
 	public static final int[] COLUMN_SQL_TYPES = new int[] {
 			Types.BIGINT,
@@ -62,7 +59,7 @@ public class JdbcLoggerPluginDefaultImpl implements JdbcLoggerPlugin {
 			Types.SMALLINT,
 			Types.NVARCHAR
 	};
-	
+
 	/** DDL column type expressions for table creation, in the same order as {@link #COLUMN_NAMES}. */
 	public static final String[] COLUMN_TYPES_FOR_CREATE = new String[] {
 			"BIGINT NOT NULL IDENTITY(1,1) PRIMARY KEY",
@@ -112,11 +109,10 @@ public class JdbcLoggerPluginDefaultImpl implements JdbcLoggerPlugin {
 	}
 
 	@Override
-	public Object getValueToInsert(int columnIndex, RequestInfo requestInfo, ResponseInfo responseInfo,
-			HttpServletRequest request, HttpServletResponse response) {
-		
+	public Object getValueToInsert(int columnIndex, RequestInfo requestInfo, ResponseInfo responseInfo) {
+
 		Object value;
-		
+
 		switch (columnIndex) {
 			case 0:
 				// identity column
@@ -152,7 +148,7 @@ public class JdbcLoggerPluginDefaultImpl implements JdbcLoggerPlugin {
 			default:
 				throw new IllegalArgumentException("invalid columnIndex: " + columnIndex);
 		}
-		
+
 		return value;
 	}
 
@@ -169,21 +165,5 @@ public class JdbcLoggerPluginDefaultImpl implements JdbcLoggerPlugin {
 	@Override
 	public final String getTableExistsSqlSuffix(String tableName) {
 		return "";
-	}
-
-	@Override
-	public void onLogRequestStart(RequestInfo requestInfo, HttpServletRequest request, HttpServletResponse response) {
-	}
-
-	@Override
-	public void onLogRequestEnd(RequestInfo requestInfo, HttpServletRequest request, HttpServletResponse response) {
-	}
-
-	@Override
-	public void onLogResponseStart(ResponseInfo responseInfo, HttpServletRequest request, HttpServletResponse response) {
-	}
-
-	@Override
-	public void onLogResponseEnd(ResponseInfo responseInfo, HttpServletRequest request, HttpServletResponse response) {
 	}
 }

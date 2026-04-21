@@ -1,8 +1,5 @@
 package io.github.alterioncorp.loggingfilter.batch;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
 import io.github.alterioncorp.loggingfilter.config.Configurable;
 import io.github.alterioncorp.loggingfilter.data.RequestInfo;
 import io.github.alterioncorp.loggingfilter.data.ResponseInfo;
@@ -17,21 +14,17 @@ public interface BatchPlugin<T> extends PluginLifecycle, Configurable {
 
 	/**
 	 * Return the number of elements to log
-	 * 
+	 *
 	 * @return the number of elements to log
 	 */
 	int getElementCount();
-	
+
 	/**
 	 * Returns the values to log for a given request/response pair.
 	 *
 	 * @param requestInfo the requestInfo
 	 * @param responseInfo the responseInfo
-	 * @param request the request
-	 * @param response the response
 	 * @return the values to log
 	 */
-	T[] getValues(
-			RequestInfo requestInfo, ResponseInfo responseInfo,
-			HttpServletRequest request, HttpServletResponse response);
+	T[] getValues(RequestInfo requestInfo, ResponseInfo responseInfo);
 }
