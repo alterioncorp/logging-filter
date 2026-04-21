@@ -5,12 +5,31 @@
 
 A Jakarta Servlet and JAX-RS filter that logs HTTP request/response pairs. Supports SLF4J and JDBC backends out of the box, with a plugin API for customization.
 
+## Modules
+
+| Artifact | Description |
+|---|---|
+| `logging-filter` | Core library — servlet filter, JAX-RS filter, SLF4J and JDBC loggers |
+| `logging-filter-vertx` | Optional — `RemoteAddressResolver` for Quarkus / Vert.x deployments |
+
 ## Installation
+
+Core library:
 
 ```xml
 <dependency>
     <groupId>io.github.alterioncorp</groupId>
     <artifactId>logging-filter</artifactId>
+    <version>2.0.0</version>
+</dependency>
+```
+
+Quarkus / Vert.x client-IP support (optional, add alongside core):
+
+```xml
+<dependency>
+    <groupId>io.github.alterioncorp</groupId>
+    <artifactId>logging-filter-vertx</artifactId>
     <version>2.0.0</version>
 </dependency>
 ```
@@ -54,8 +73,9 @@ All configuration properties can be set as servlet `init-param` values or as JVM
 
 Configuration is read exclusively from JVM system properties (no `web.xml` equivalent for JAX-RS). The same property names apply.
 
-**Limitations compared to the servlet filter:**
-- Client IP comes from `X-Forwarded-For` only (no `RemoteAddr` fallback).
+**Client IP resolution:** `X-Forwarded-For` is checked first. If absent, an optional `RemoteAddressResolver` CDI bean is called. For Quarkus/Vert.x, add the `logging-filter-vertx` dependency — it ships a `@RequestScoped` resolver that reads the socket peer address from the Vert.x `HttpServerRequest`. For other JAX-RS runtimes, implement `RemoteAddressResolver` yourself (see [Custom client-IP resolver](#custom-client-ip-resolver)).
+
+**Other limitations compared to the servlet filter:**
 - No form-body logging.
 - No session ID — JAX-RS has no session concept.
 
@@ -206,6 +226,24 @@ public class MyJdbcPlugin extends JdbcLoggerPluginDefaultWithAdditionalColumns {
 ```
 
 Changing the schema requires overriding `getDataVersion()` to return a new value — this causes a new table to be created.
+
+## Custom client-IP resolver
+
+For JAX-RS runtimes other than Quarkus/Vert.x, implement `RemoteAddressResolver` and expose it as a CDI bean:
+
+```java
+@RequestScoped
+public class MyRemoteAddressResolver implements RemoteAddressResolver {
+
+    @Override
+    public String getRemoteAddress() {
+        // obtain socket peer address from your runtime's APIs
+        return ...;
+    }
+}
+```
+
+`ContainerLoggingFilter` discovers the bean automatically via `@Inject Instance<RemoteAddressResolver>`. No code changes needed in the filter.
 
 ## JMX
 

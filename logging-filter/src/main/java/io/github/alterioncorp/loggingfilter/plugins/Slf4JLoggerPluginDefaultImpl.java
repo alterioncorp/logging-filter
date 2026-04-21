@@ -90,10 +90,10 @@ public class Slf4JLoggerPluginDefaultImpl implements Slf4JLoggerPlugin {
 		}
 
 		valuesToLog.addAll(Arrays.asList(
-				info.getClientNameOrAddress(),
+				orFiller(info.getClientNameOrAddress()),
 				NO_RESPONSE_CODE,
-				info.getMethod(),
-				getPathWithParams(info)));
+				orFiller(info.getMethod()),
+				orFiller(getPathWithParams(info))));
 
     	if (showSessionId) {
     		valuesToLog.add(getSessionId(info));
@@ -113,10 +113,10 @@ public class Slf4JLoggerPluginDefaultImpl implements Slf4JLoggerPlugin {
 		}
 
 		valuesToLog.addAll(Arrays.asList(
-				info.getClientNameOrAddress(),
+				orFiller(info.getClientNameOrAddress()),
 				info.getResponseCode(),
-				info.getMethod(),
-				getPathWithParams(info)));
+				orFiller(info.getMethod()),
+				orFiller(getPathWithParams(info))));
 
     	if (showSessionId) {
     		valuesToLog.add(getSessionId(info));
@@ -165,5 +165,9 @@ public class Slf4JLoggerPluginDefaultImpl implements Slf4JLoggerPlugin {
 
 	private static String getSessionId(BaseInfo info) {
 		return info.getSessionId() == null ? NO_SESSION : info.getSessionId();
+	}
+
+	private static String orFiller(String value) {
+		return value != null ? value : FILLER;
 	}
 }

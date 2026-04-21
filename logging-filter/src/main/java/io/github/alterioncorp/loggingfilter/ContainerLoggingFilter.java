@@ -21,6 +21,8 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
@@ -47,7 +49,9 @@ import io.github.alterioncorp.loggingfilter.plugins.PluginFactoryImpl;
  *
  * <p>Limitations compared to the servlet {@link LoggingFilter}:
  * <ul>
- *   <li>No remote-address fallback — client IP comes from {@code X-Forwarded-For} or is {@code null}.</li>
+ *   <li>Client IP comes from {@code X-Forwarded-For} first, then from an optional
+ *       {@link RemoteAddressResolver} CDI bean (e.g. the {@code logging-filter-vertx} module).
+ *       If neither is available the IP is {@code null}.</li>
  *   <li>No form-body logging — reading the entity would consume it before the resource sees it.</li>
  *   <li>No session ID — JAX-RS has no session concept.</li>
  * </ul>
@@ -66,6 +70,9 @@ public class ContainerLoggingFilter implements ContainerRequestFilter, Container
 	static final String PROPERTY_LOGGERS = "logging-filter.loggers";
 	static final String PROPERTY_PARAM_NAMES_TO_HIDE = "logging-filter.param-names-to-hide";
 	static final String HIDDEN_PARAM_VALUE = "*****";
+
+	@Inject
+	private Instance<RemoteAddressResolver> remoteAddressResolvers;
 
 	private final PluginFactory pluginFactory;
 	private final MBeanServer mBeanServer;
@@ -165,7 +172,7 @@ public class ContainerLoggingFilter implements ContainerRequestFilter, Container
 	public void filter(ContainerRequestContext requestContext) {
 
 		Map<String, List<String>> headers = requestContext.getHeaders();
-		String clientIp = clientIpResolver.getClientIp(headers, null);
+		String clientIp = clientIpResolver.getClientIp(headers, resolveRemoteAddress());
 		String method = requestContext.getMethod();
 		String path = requestContext.getUriInfo().getPath();
 		String params = queryParamsToString(requestContext);
@@ -243,5 +250,18 @@ public class ContainerLoggingFilter implements ContainerRequestFilter, Container
 
 	Set<String> getParamNamesToHide() {
 		return paramNamesToHide;
+	}
+
+	private String resolveRemoteAddress() {
+		if (remoteAddressResolvers == null || remoteAddressResolvers.isUnsatisfied()) {
+			return null;
+		}
+		try {
+			return remoteAddressResolvers.get().getRemoteAddress();
+		}
+		catch (RuntimeException e) {
+			LOGGER.debug("RemoteAddressResolver failed", e);
+			return null;
+		}
 	}
 }

@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.github.alterioncorp.loggingfilter.LoggingFilter;
 import io.github.alterioncorp.loggingfilter.config.Configuration;
 import io.github.alterioncorp.loggingfilter.data.RequestInfo;
 import io.github.alterioncorp.loggingfilter.data.ResponseInfo;
@@ -35,6 +34,14 @@ public final class Slf4JLoggerImpl implements InfoLogger, InfoLoggerMXBean {
 	/** Configuration property name for the plugin class to use. */
 	public static final String PARAM_PLUGIN = "logging-filter.slf4j.plugin";
 
+	/** SLF4J logger name used for request log entries. */
+	public static final String LOGGER_NAME_REQUEST =
+			"io.github.alterioncorp.loggingfilter.LoggingFilter.rqst";
+
+	/** SLF4J logger name used for response log entries. */
+	public static final String LOGGER_NAME_RESPONSE =
+			"io.github.alterioncorp.loggingfilter.LoggingFilter.resp";
+
 	private final Logger loggerRequest;
 	private final Logger loggerResponse;
 	private final PluginFactory pluginFactory;
@@ -46,8 +53,8 @@ public final class Slf4JLoggerImpl implements InfoLogger, InfoLoggerMXBean {
 	 * Creates a new instance using the default SLF4J loggers and plugin factory.
 	 */
 	public Slf4JLoggerImpl() {
-		loggerRequest = LoggerFactory.getLogger(LoggingFilter.class.getName() + ".rqst");
-		loggerResponse = LoggerFactory.getLogger(LoggingFilter.class.getName() + ".resp");
+		loggerRequest = LoggerFactory.getLogger(LOGGER_NAME_REQUEST);
+		loggerResponse = LoggerFactory.getLogger(LOGGER_NAME_RESPONSE);
 		pluginFactory = new PluginFactoryImpl();
 	}
 
