@@ -52,11 +52,6 @@
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
-				<groupId>io.github.alterioncorp</groupId>
-				<artifactId>logging-filter</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-			<dependency>
 				<groupId>io.vertx</groupId>
 				<artifactId>vertx-core</artifactId>
 				<version>4.5.11</version>
