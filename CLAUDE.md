@@ -96,3 +96,9 @@ Each `InfoLogger` exposes an `InfoLoggerMXBean` (enable/disable at runtime). The
 ### Testing
 
 Tests use JUnit 5 + Mockito. `JdbcLoggerImpl` tests use an in-memory Apache Derby database via the `test-derby` library. The `BatchQueueImpl` and scheduler are exercised with injected `ScheduledExecutorService` mocks. `VertxRemoteAddressResolverTest` uses reflection to inject the mock `HttpServerRequest` field (no CDI container in unit tests).
+
+## Things that will bite you
+
+- **`ContainerLoggingFilter` runs at `@Priority(100)`, i.e. *before* `Priorities.AUTHENTICATION` (1000).** This is intentional, but it means the request-side `AttributeCollector.apply()` call fires before any business filter (auth, tenant resolution) has had a chance to populate MDC. Any consumer relying on `logging-filter.attributes.from-mdc` to capture request-scoped context on the *request* log line must give its own filter a `@Priority` value lower than 100.
+- **JAX-RS response filters run in the reverse order of request filters.** A business filter that wants its MDC/attribute values still populated when `ContainerLoggingFilter`'s response-side line is written must clear that state at a *lower* priority than 100 (so it runs earlier on the request side and later on the response side).
+- **`@PostConstruct` alone is not enough for eager CDI init.** CDI only fires `@PostConstruct` on first injection/use by default, unlike the servlet filter's eager `init(FilterConfig)`. `ContainerLoggingFilter` compensates with a no-op `onStartup(@Observes @Initialized(ApplicationScoped.class) Object event)` observer so MBean registration (and JMX enable/disable) is available from application startup rather than only after the first request. This can't be verified by a unit test in this repo — there's no running CDI container in the test suite — so treat it as a container-integration-test gap if you touch this path.

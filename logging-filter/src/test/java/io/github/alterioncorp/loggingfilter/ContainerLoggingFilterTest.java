@@ -8,6 +8,7 @@ import java.util.Properties;
 
 import javax.management.MBeanServer;
 
+import jakarta.enterprise.inject.Instance;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.core.MultivaluedHashMap;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.slf4j.MDC;
 
 import io.github.alterioncorp.loggingfilter.data.RequestInfo;
 import io.github.alterioncorp.loggingfilter.data.ResponseInfo;
@@ -164,5 +166,109 @@ public class ContainerLoggingFilterTest {
 				pluginFactory, mBeanServer, systemProperties, clientIpResolver, null);
 
 		assertDoesNotThrow(() -> uninitializedFilter.destroy());
+	}
+
+	@Test
+	public void testResolveRemoteAddress_NoResolverRegistered_PassesNull() {
+
+		// remoteAddressResolvers is never injected (stays null, as in a plain unit test)
+		filter.filter(requestContext);
+
+		Mockito.verify(clientIpResolver).getClientIp(Mockito.any(), Mockito.isNull());
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void testResolveRemoteAddress_Unsatisfied_PassesNull() {
+
+		Instance<RemoteAddressResolver> resolvers = Mockito.mock(Instance.class);
+		Mockito.when(resolvers.isUnsatisfied()).thenReturn(true);
+		filter.setRemoteAddressResolvers(resolvers);
+
+		filter.filter(requestContext);
+
+		Mockito.verify(clientIpResolver).getClientIp(Mockito.any(), Mockito.isNull());
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void testResolveRemoteAddress_Ambiguous_PassesNull() {
+
+		Instance<RemoteAddressResolver> resolvers = Mockito.mock(Instance.class);
+		Mockito.when(resolvers.isUnsatisfied()).thenReturn(false);
+		Mockito.when(resolvers.isAmbiguous()).thenReturn(true);
+		filter.setRemoteAddressResolvers(resolvers);
+
+		filter.filter(requestContext);
+
+		Mockito.verify(clientIpResolver).getClientIp(Mockito.any(), Mockito.isNull());
+		Mockito.verify(resolvers, Mockito.never()).get();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void testResolveRemoteAddress_ResolverThrows_PassesNull() {
+
+		Instance<RemoteAddressResolver> resolvers = Mockito.mock(Instance.class);
+		RemoteAddressResolver resolver = Mockito.mock(RemoteAddressResolver.class);
+		Mockito.when(resolvers.isUnsatisfied()).thenReturn(false);
+		Mockito.when(resolvers.isAmbiguous()).thenReturn(false);
+		Mockito.when(resolvers.get()).thenReturn(resolver);
+		Mockito.when(resolver.getRemoteAddress()).thenThrow(new RuntimeException("boom"));
+		filter.setRemoteAddressResolvers(resolvers);
+
+		filter.filter(requestContext);
+
+		Mockito.verify(clientIpResolver).getClientIp(Mockito.any(), Mockito.isNull());
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void testResolveRemoteAddress_ResolverSucceeds_PassesValue() {
+
+		Instance<RemoteAddressResolver> resolvers = Mockito.mock(Instance.class);
+		RemoteAddressResolver resolver = Mockito.mock(RemoteAddressResolver.class);
+		Mockito.when(resolvers.isUnsatisfied()).thenReturn(false);
+		Mockito.when(resolvers.isAmbiguous()).thenReturn(false);
+		Mockito.when(resolvers.get()).thenReturn(resolver);
+		Mockito.when(resolver.getRemoteAddress()).thenReturn("9.9.9.9");
+		filter.setRemoteAddressResolvers(resolvers);
+
+		filter.filter(requestContext);
+
+		Mockito.verify(clientIpResolver).getClientIp(Mockito.any(), Mockito.eq("9.9.9.9"));
+	}
+
+	@Test
+	public void testFilter_AttributesFromMdc_AppliedToRequestAndResponse() {
+
+		systemProperties.setProperty(AttributeCollector.PARAM_FROM_MDC, "tenantId");
+		filter = new ContainerLoggingFilter(pluginFactory, mBeanServer, systemProperties,
+				clientIpResolver, Arrays.asList(logger));
+		filter.init();
+
+		Mockito.when(clientIpResolver.getClientIp(Mockito.any(), Mockito.isNull()))
+			.thenReturn("1.2.3.4");
+		Mockito.when(responseContext.getStatus()).thenReturn(200);
+
+		MDC.put("tenantId", "acme");
+		try {
+			filter.filter(requestContext);
+
+			ArgumentCaptor<RequestInfo> requestCaptor = ArgumentCaptor.forClass(RequestInfo.class);
+			Mockito.verify(logger).logRequest(requestCaptor.capture());
+			assertEquals("acme", requestCaptor.getValue().getAttribute("tenantId"));
+
+			Mockito.when(requestContext.getProperty(PROP_REQUEST_INFO)).thenReturn(requestCaptor.getValue());
+
+			filter.filter(requestContext, responseContext);
+
+			ArgumentCaptor<ResponseInfo> responseCaptor = ArgumentCaptor.forClass(ResponseInfo.class);
+			Mockito.verify(logger).logResponse(responseCaptor.capture());
+			assertEquals("acme", responseCaptor.getValue().getAttribute("tenantId"));
+		}
+		finally {
+			MDC.clear();
+		}
 	}
 }

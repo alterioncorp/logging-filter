@@ -10,7 +10,7 @@
 	</parent>
 
 	<artifactId>logging-filter-parent</artifactId>
-	<version>2-SNAPSHOT</version>
+	<version>1.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<name>logging-filter-parent</name>
@@ -45,7 +45,7 @@
 
 	<properties>
 		<version.slf4j>2.0.17</version.slf4j>
-		<version.log4j>2.25.3</version.log4j>
+		<version.log4j>2.25.4</version.log4j>
 		<version.derby>10.16.1.1</version.derby>
 	</properties>
 
@@ -54,7 +54,7 @@
 			<dependency>
 				<groupId>io.vertx</groupId>
 				<artifactId>vertx-core</artifactId>
-				<version>4.5.11</version>
+				<version>4.5.24</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>

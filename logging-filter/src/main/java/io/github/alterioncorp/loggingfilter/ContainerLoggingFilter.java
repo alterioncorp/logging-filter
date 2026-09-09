@@ -21,9 +21,10 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Initialized;
+import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.ContainerResponseContext;
@@ -56,11 +57,21 @@ import io.github.alterioncorp.loggingfilter.plugins.PluginFactoryImpl;
  *   <li>No session ID — JAX-RS has no session concept.</li>
  * </ul>
  *
+ * <p>Runs at {@code @Priority(100)}, i.e. before {@code Priorities.AUTHENTICATION} (1000). Business
+ * filters that need to populate MDC/attributes before the request log line is written must run at a
+ * lower priority number than 100; because JAX-RS response filters run in reverse request order, those
+ * same filters must clear that state late enough to still be visible when this filter's response-side
+ * line is written. See CLAUDE.md, "Things that will bite you".
+ *
+ * <p>A no-op {@link #onStartup} CDI observer forces this bean to be instantiated (and {@link #init()}
+ * to run) at application startup rather than on first request, since {@code @PostConstruct} alone is
+ * fired lazily by CDI.
+ *
  * @see LoggingFilter
  */
 @Provider
 @ApplicationScoped
-@Priority(Priorities.USER)
+@Priority(100)
 public class ContainerLoggingFilter implements ContainerRequestFilter, ContainerResponseFilter {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ContainerLoggingFilter.class);
@@ -144,6 +155,16 @@ public class ContainerLoggingFilter implements ContainerRequestFilter, Container
 				throw new RuntimeException(e);
 			}
 		}
+	}
+
+	/**
+	 * No-op observer of the CDI application-startup event. Its only purpose is to force the container
+	 * to obtain a contextual instance of this bean (and thus run {@link #init()}) eagerly at deployment,
+	 * rather than deferring it to the first injection/request as {@code @PostConstruct} alone would.
+	 *
+	 * @param event the application-scoped initialized event (unused)
+	 */
+	void onStartup(@Observes @Initialized(ApplicationScoped.class) Object event) {
 	}
 
 	/**
@@ -256,12 +277,25 @@ public class ContainerLoggingFilter implements ContainerRequestFilter, Container
 		if (remoteAddressResolvers == null || remoteAddressResolvers.isUnsatisfied()) {
 			return null;
 		}
+		if (remoteAddressResolvers.isAmbiguous()) {
+			LOGGER.warn("Multiple RemoteAddressResolver beans registered; falling back to X-Forwarded-For only");
+			return null;
+		}
 		try {
 			return remoteAddressResolvers.get().getRemoteAddress();
 		}
 		catch (RuntimeException e) {
-			LOGGER.debug("RemoteAddressResolver failed", e);
+			LOGGER.warn("RemoteAddressResolver failed", e);
 			return null;
 		}
+	}
+
+	/**
+	 * Test-only hook for injecting a mock {@link Instance} in place of CDI's {@code @Inject}.
+	 *
+	 * @param remoteAddressResolvers the resolvers instance to use
+	 */
+	void setRemoteAddressResolvers(Instance<RemoteAddressResolver> remoteAddressResolvers) {
+		this.remoteAddressResolvers = remoteAddressResolvers;
 	}
 }
