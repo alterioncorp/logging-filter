@@ -20,7 +20,7 @@ Core library:
 <dependency>
     <groupId>io.github.alterioncorp</groupId>
     <artifactId>logging-filter</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.1</version>
 </dependency>
 ```
 
@@ -30,7 +30,7 @@ Quarkus / Vert.x client-IP support (optional, add alongside core):
 <dependency>
     <groupId>io.github.alterioncorp</groupId>
     <artifactId>logging-filter-vertx</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.1</version>
 </dependency>
 ```
 
