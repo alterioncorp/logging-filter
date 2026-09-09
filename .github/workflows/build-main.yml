@@ -34,15 +34,30 @@ jobs:
           CENTRAL_TOKEN: ${{ secrets.CENTRAL_TOKEN }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
-      - name: Save coverage report
+      - name: Save coverage report (logging-filter)
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-report
           path: logging-filter/target/site/jacoco/jacoco.xml
           retention-days: 1
 
+      - name: Save coverage report (logging-filter-vertx)
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report-vertx
+          path: logging-filter-vertx/target/site/jacoco/jacoco.xml
+          retention-days: 1
+
   upload-coverage:
     needs: build-and-publish
     uses: alterioncorp/.github/.github/workflows/upload-coverage.yml@main
+    secrets:
+      codecov-token: ${{ secrets.CODECOV_TOKEN }}
+
+  upload-coverage-vertx:
+    needs: build-and-publish
+    uses: alterioncorp/.github/.github/workflows/upload-coverage.yml@main
+    with:
+      artifact-name: jacoco-report-vertx
     secrets:
       codecov-token: ${{ secrets.CODECOV_TOKEN }}
