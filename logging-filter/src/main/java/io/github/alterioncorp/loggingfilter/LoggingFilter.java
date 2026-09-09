@@ -1,0 +1,295 @@
+package io.github.alterioncorp.loggingfilter;
+
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.management.JMException;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.github.alterioncorp.loggingfilter.batch.AbstractBatchLogger;
+import io.github.alterioncorp.loggingfilter.config.ConfigurationDefaultImpl;
+import io.github.alterioncorp.loggingfilter.data.RequestInfo;
+import io.github.alterioncorp.loggingfilter.data.ResponseInfo;
+import io.github.alterioncorp.loggingfilter.jmx.InfoLoggerMXBean;
+import io.github.alterioncorp.loggingfilter.loggers.InfoLogger;
+import io.github.alterioncorp.loggingfilter.loggers.Slf4JLoggerImpl;
+import io.github.alterioncorp.loggingfilter.plugins.PluginFactory;
+import io.github.alterioncorp.loggingfilter.plugins.PluginFactoryImpl;
+
+/**
+ * Filter that logs information about request/response round-trips.
+ * The actual logging implementation is delegated to a collection of {@link InfoLogger} instances.
+ * This class will use a {@link Slf4JLoggerImpl} by default.
+ *
+ * The following system-properties or filter init-params customize the behavior of this filter:
+ * <ul>
+ * 	<li>logging-filter.loggers: A comma-separated list of {@link InfoLogger} classes to use.  If not specified, {@link Slf4JLoggerImpl} will be used.</li>
+ * 	<li>logging-filter.param-names-to-hide: a comma-separated list of parameter names whose values should be masked (e.g. password).</li>
+ * 	<li>logging-filter.attributes.from-mdc: comma-separated MDC key names to capture as attributes.</li>
+ * 	<li>logging-filter.attributes.from-header: comma-separated attrName:HeaderName pairs to capture from request headers.</li>
+ * 	<li>logging-filter.attributes.from-sysprop: comma-separated attrName:syspropName pairs to capture from system properties.</li>
+ * </ul>
+ *
+ * @see InfoLogger
+ * @see Slf4JLoggerImpl
+ * @see AbstractBatchLogger
+ */
+public final class LoggingFilter implements Filter {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(LoggingFilter.class);
+
+	static final String PROPERTY_SERVER_NAME = "jboss.node.name";
+	static final String PROPERTY_LOGGERS = "logging-filter.loggers";
+	static final String PROPERTY_PARAM_NAMES_TO_HIDE = "logging-filter.param-names-to-hide";
+	static final String HIDDEN_PARAM_VALUE = "*****";
+
+	private final ClientIpResolver clientIpResolver;
+	private final PluginFactory pluginFactory;
+	private final Properties systemProperties;
+	private final MBeanServer mBeanServer;
+
+	private List<InfoLogger> loggers;
+	private Set<String> paramNamesToHide = new HashSet<>();
+	private String serverName;
+	private AttributeCollector attributeCollector;
+
+	/**
+	 * Creates a new instance with default dependencies.
+	 */
+	public LoggingFilter() {
+		super();
+		clientIpResolver = new ClientIpResolverImpl();
+		pluginFactory = new PluginFactoryImpl();
+		systemProperties = System.getProperties();
+		mBeanServer = ManagementFactory.getPlatformMBeanServer();
+	}
+
+	LoggingFilter(ClientIpResolver clientIpResolver, PluginFactory pluginFactory, Properties properties, List<InfoLogger> loggers, MBeanServer mBeanServer) {
+		super();
+		this.clientIpResolver = clientIpResolver;
+		this.pluginFactory = pluginFactory;
+		this.systemProperties = properties;
+		this.loggers = loggers;
+		this.mBeanServer = mBeanServer;
+	}
+
+	@Override
+	public final void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+			throws IOException, ServletException {
+
+		HttpServletRequest httpServletRequest = (HttpServletRequest)request;
+		HttpServletResponse httpServletResponse = (HttpServletResponse)response;
+		int responseStatus;
+
+		Map<String, List<String>> requestHeaders = captureRequestHeaders(httpServletRequest);
+		String requestIP = clientIpResolver.getClientIp(requestHeaders, httpServletRequest.getRemoteAddr());
+		String method = httpServletRequest.getMethod();
+		String path = httpServletRequest.getRequestURI();
+		String params = requestParamsToString(httpServletRequest);
+		String sessionId = httpServletRequest.getSession(false) == null ? null : httpServletRequest.getSession().getId();
+
+		RequestInfo requestInfo = new RequestInfo();
+		requestInfo.setStartTimestamp(new Date());
+		requestInfo.setClientNameOrAddress(requestIP);
+		requestInfo.setServerNameOrAddress(serverName);
+		requestInfo.setMethod(method);
+		requestInfo.setPath(path);
+		requestInfo.setParamsAsString(params);
+		requestInfo.setSessionId(sessionId);
+		requestInfo.setHeaders(requestHeaders);
+
+		if (attributeCollector != null) {
+			attributeCollector.apply(requestInfo, requestHeaders);
+		}
+
+		for (InfoLogger logger : loggers) {
+			if (logger.isEnabled()) {
+				logger.logRequest(requestInfo);
+			}
+		}
+
+		try {
+			chain.doFilter(request, response);
+		}
+		finally {
+
+			responseStatus = httpServletResponse.getStatus();
+			sessionId = httpServletRequest.getSession(false) == null ? null : httpServletRequest.getSession().getId();
+			Map<String, List<String>> responseHeaders = captureResponseHeaders(httpServletResponse);
+
+			ResponseInfo responseInfo = new ResponseInfo();
+			responseInfo.setEndTimestamp(new Date());
+			responseInfo.setClientNameOrAddress(requestIP);
+			responseInfo.setServerNameOrAddress(serverName);
+			responseInfo.setMethod(method);
+			responseInfo.setPath(path);
+			responseInfo.setParamsAsString(params);
+			responseInfo.setSessionId(sessionId);
+			responseInfo.setResponseCode(responseStatus);
+			responseInfo.setHeaders(responseHeaders);
+
+			if (attributeCollector != null) {
+				attributeCollector.apply(responseInfo, requestHeaders);
+			}
+
+			for (InfoLogger logger : loggers) {
+				if (logger.isEnabled()) {
+					logger.logResponse(responseInfo);
+				}
+			}
+		}
+	}
+
+	@Override
+	public final void init(FilterConfig filterConfig) throws ServletException {
+
+		ConfigurationDefaultImpl config = new ConfigurationDefaultImpl(filterConfig, systemProperties);
+
+		String paramNamesToHideValue = config.getConfigProperty(PROPERTY_PARAM_NAMES_TO_HIDE);
+
+		if (paramNamesToHideValue != null) {
+			paramNamesToHide = Arrays.stream(paramNamesToHideValue.split(","))
+					.map(String::trim)
+					.collect(Collectors.toSet());
+		}
+
+		if (loggers == null) {
+
+			String propertyLoggers = config.getConfigProperty(PROPERTY_LOGGERS);
+
+			String[] loggerClasses;
+			if (propertyLoggers != null) {
+				loggerClasses = propertyLoggers.split(",");
+			}
+			else {
+				loggerClasses = new String[] {Slf4JLoggerImpl.class.getName()};
+			}
+
+			loggers = new ArrayList<>(loggerClasses.length);
+			for (String loggerClass : loggerClasses) {
+				loggers.add(pluginFactory.getPlugin(InfoLogger.class, loggerClass.trim()));
+			}
+		}
+
+		serverName = config.getConfigProperty(PROPERTY_SERVER_NAME);
+		attributeCollector = new AttributeCollector(config);
+
+		for (InfoLogger logger : loggers) {
+			logger.init(config);
+		}
+
+		for (InfoLogger logger : loggers) {
+			try {
+				InfoLoggerMXBean mBean = logger.getMBean();
+				mBeanServer.registerMBean(mBean, new ObjectName(mBean.getBeanName()));
+			}
+			catch (JMException e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
+
+	@Override
+	public final void destroy() {
+
+		if (loggers == null) {
+			return;
+		}
+
+		for (InfoLogger logger : loggers) {
+
+			try {
+				InfoLoggerMXBean mBean = logger.getMBean();
+				mBeanServer.unregisterMBean(new ObjectName(mBean.getBeanName()));
+			}
+			catch (JMException e) {
+				LOGGER.warn("error unregistering MBean", e);
+			}
+
+			logger.destroy();
+		}
+	}
+
+	private String requestParamsToString(HttpServletRequest request) {
+
+		StringBuilder sb = new StringBuilder();
+
+		boolean firstParam = true;
+
+		for (String name : request.getParameterMap().keySet()) {
+			for (String value : request.getParameterMap().get(name)) {
+				if (! firstParam) {
+					sb.append("&");
+				}
+				sb.append(URLEncoder.encode(name, StandardCharsets.UTF_8));
+				sb.append("=");
+				if (paramNamesToHide.contains(name)) {
+					sb.append(HIDDEN_PARAM_VALUE);
+				} else {
+					sb.append(URLEncoder.encode(value, StandardCharsets.UTF_8));
+				}
+				firstParam = false;
+			}
+		}
+
+		return sb.toString();
+	}
+
+	private static Map<String, List<String>> captureRequestHeaders(HttpServletRequest request) {
+		Map<String, List<String>> headers = new HashMap<>();
+		Enumeration<String> headerNames = request.getHeaderNames();
+		if (headerNames != null) {
+			while (headerNames.hasMoreElements()) {
+				String name = headerNames.nextElement();
+				headers.put(name, Collections.list(request.getHeaders(name)));
+			}
+		}
+		return headers;
+	}
+
+	private static Map<String, List<String>> captureResponseHeaders(HttpServletResponse response) {
+		Map<String, List<String>> headers = new HashMap<>();
+		for (String name : response.getHeaderNames()) {
+			headers.put(name, new ArrayList<>(response.getHeaders(name)));
+		}
+		return headers;
+	}
+
+	Set<String> getParamNamesToHide() {
+		return paramNamesToHide;
+	}
+
+	String getServerName() {
+		return serverName;
+	}
+
+	void setServerName(String serverName) {
+		this.serverName = serverName;
+	}
+}

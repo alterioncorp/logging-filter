@@ -1,0 +1,30 @@
+package io.github.alterioncorp.loggingfilter.batch;
+
+import io.github.alterioncorp.loggingfilter.config.Configurable;
+import io.github.alterioncorp.loggingfilter.data.RequestInfo;
+import io.github.alterioncorp.loggingfilter.data.ResponseInfo;
+import io.github.alterioncorp.loggingfilter.plugins.PluginLifecycle;
+
+/**
+ * Super interface for all plugins.
+ *
+ * @param <T> the type of each logged element
+ */
+public interface BatchPlugin<T> extends PluginLifecycle, Configurable {
+
+	/**
+	 * Return the number of elements to log
+	 *
+	 * @return the number of elements to log
+	 */
+	int getElementCount();
+
+	/**
+	 * Returns the values to log for a given request/response pair.
+	 *
+	 * @param requestInfo the requestInfo
+	 * @param responseInfo the responseInfo
+	 * @return the values to log
+	 */
+	T[] getValues(RequestInfo requestInfo, ResponseInfo responseInfo);
+}

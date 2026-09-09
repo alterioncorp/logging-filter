@@ -5,17 +5,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Build and run all tests
+# Build all modules and run all tests
 mvn package
 
-# Run tests only
+# Build and test only the core module
+mvn package -pl logging-filter
+
+# Build and test only the Vert.x module (core must be installed first)
+mvn package -pl logging-filter-vertx -am
+
+# Run tests only (all modules)
 mvn test
 
-# Run a single test class
-mvn test -Dtest=LoggingFilterTest
+# Run a single test class (from repo root)
+mvn test -pl logging-filter -Dtest=LoggingFilterTest
 
 # Run a single test method
-mvn test -Dtest=LoggingFilterTest#testDoFilter
+mvn test -pl logging-filter -Dtest=LoggingFilterTest#testDoFilter
 
 # Generate javadocs
 mvn javadoc:javadoc
@@ -26,16 +32,40 @@ mvn package -DskipTests
 
 ## Architecture
 
-This is a Jakarta Servlet filter library (`LoggingFilter`) that logs HTTP request/response pairs. It has no runtime framework dependency — only `jakarta.servlet-api` and `slf4j-api` are provided-scope.
+This is a multi-module Maven project. The root POM (`logging-filter-parent`) aggregates two modules:
 
-### Core flow
+- **`logging-filter`** — core library (Jakarta Servlet filter + JAX-RS filter + SLF4J/JDBC loggers)
+- **`logging-filter-vertx`** — optional Quarkus/Vert.x integration (`VertxRemoteAddressResolver`)
 
-`LoggingFilter` (the only public `Filter`) intercepts each request:
-1. Captures request metadata into a `RequestInfo` via `ClientIpResolverImpl`
-2. Calls `InfoLogger#logRequest` on each configured logger
-3. Delegates to the filter chain
-4. Captures response metadata into a `ResponseInfo`
-5. Calls `InfoLogger#logResponse` on each configured logger
+The core library has no runtime framework dependency — only `jakarta.servlet-api`, `jakarta.ws.rs-api`, `jakarta.enterprise.cdi-api`, and `slf4j-api` are provided-scope.
+
+### Entry points
+
+Two public filter classes:
+
+- **`LoggingFilter`** — Jakarta Servlet `Filter`. Registered in `web.xml`. Has access to `HttpServletRequest` for form params and session ID.
+- **`ContainerLoggingFilter`** — JAX-RS `ContainerRequestFilter` + `ContainerResponseFilter`. CDI `@ApplicationScoped`, auto-discovered via `META-INF/beans.xml`. Configured via system properties only.
+
+### Core flow (`LoggingFilter`)
+
+1. Captures request headers and resolves client IP via `ClientIpResolverImpl`
+2. Populates `RequestInfo` attributes via `AttributeCollector`
+3. Calls `InfoLogger#logRequest` on each configured logger
+4. Delegates to the filter chain
+5. Captures response metadata into `ResponseInfo`
+6. Calls `InfoLogger#logResponse` on each configured logger
+
+### Core flow (`ContainerLoggingFilter`)
+
+Same pattern, but:
+- Client IP comes from `X-Forwarded-For` first, then from an optional `RemoteAddressResolver` CDI bean (fallback for direct socket access — see `logging-filter-vertx`).
+- No form-body logging, no session ID.
+
+### Stack-neutral SPI
+
+All plugin and logger interfaces operate on `RequestInfo`/`ResponseInfo` only — no `HttpServletRequest`/`HttpServletResponse` parameters. Header and attribute data is captured once at the filter layer and stored on the info objects.
+
+`RemoteAddressResolver` is the one runtime-specific escape hatch, exposed as an optional CDI SPI. `ContainerLoggingFilter` uses `@Inject Instance<RemoteAddressResolver>` so the injection is satisfied even when no implementation is registered.
 
 ### Plugin system
 
@@ -52,12 +82,23 @@ Plugins are instantiated by class name via `PluginFactoryImpl` (reflection, no-a
 
 ### Configuration
 
-`ConfigurationImpl` resolves all properties by checking system properties first, then servlet filter `init-param` values. The key property names are constants on each class (e.g. `LoggingFilter.PROPERTY_LOGGERS`, `JdbcLoggerImpl.PARAM_DATA_SOURCE_JNDI_NAME`).
+`ConfigurationDefaultImpl` resolves all properties by checking system properties first, then servlet filter `init-param` values. `ConfigurationContainerImpl` reads system properties only (for the JAX-RS path). The key property names are constants on each class (e.g. `LoggingFilter.PROPERTY_LOGGERS`, `JdbcLoggerImpl.PARAM_DATA_SOURCE_JNDI_NAME`).
+
+### JAX-RS entry-point specifics
+
+- **Client IP resolution:** `X-Forwarded-For` header is checked first. If absent, `ContainerLoggingFilter` calls `resolveRemoteAddress()`, which uses CDI `Instance<RemoteAddressResolver>` to find a registered implementation. The standard Quarkus impl is a 10-line `@RequestScoped` class that reads `@Context HttpServerRequest.remoteAddress()` — shipped in `logging-filter-vertx`.
+- **`logging-filter-vertx`**: drop the dependency on the classpath; CDI auto-discovers `VertxRemoteAddressResolver` via its `META-INF/beans.xml`. No code changes needed in the consumer.
 
 ### JMX
 
-Each `InfoLogger` exposes an `InfoLoggerMXBean` (enable/disable at runtime). The bean name is constructed by `JmxUtils.getBeanName` using the servlet context path and filter name to ensure uniqueness per deployment.
+Each `InfoLogger` exposes an `InfoLoggerMXBean` (enable/disable at runtime). The bean name is constructed by `JmxUtils.getBeanName(instanceName, class)` where `instanceName` is `contextPath/filterName` (servlet) or the value of `logging-filter.instance-name` (JAX-RS, defaults to `container-logging-filter`).
 
 ### Testing
 
-Tests use JUnit 5 + Mockito. `JdbcLoggerImpl` tests use an in-memory Apache Derby database via the `test-derby` library. The `BatchQueueImpl` and scheduler are exercised with injected `ScheduledExecutorService` mocks.
+Tests use JUnit 5 + Mockito. `JdbcLoggerImpl` tests use an in-memory Apache Derby database via the `test-derby` library. The `BatchQueueImpl` and scheduler are exercised with injected `ScheduledExecutorService` mocks. `VertxRemoteAddressResolverTest` uses reflection to inject the mock `HttpServerRequest` field (no CDI container in unit tests).
+
+## Things that will bite you
+
+- **`ContainerLoggingFilter` runs at `@Priority(100)`, i.e. *before* `Priorities.AUTHENTICATION` (1000).** This is intentional, but it means the request-side `AttributeCollector.apply()` call fires before any business filter (auth, tenant resolution) has had a chance to populate MDC. Any consumer relying on `logging-filter.attributes.from-mdc` to capture request-scoped context on the *request* log line must give its own filter a `@Priority` value lower than 100.
+- **JAX-RS response filters run in the reverse order of request filters.** A business filter that wants its MDC/attribute values still populated when `ContainerLoggingFilter`'s response-side line is written must clear that state at a *lower* priority than 100 (so it runs earlier on the request side and later on the response side).
+- **`@PostConstruct` alone is not enough for eager CDI init.** CDI only fires `@PostConstruct` on first injection/use by default, unlike the servlet filter's eager `init(FilterConfig)`. `ContainerLoggingFilter` compensates with a no-op `onStartup(@Observes @Initialized(ApplicationScoped.class) Object event)` observer so MBean registration (and JMX enable/disable) is available from application startup rather than only after the first request. This can't be verified by a unit test in this repo — there's no running CDI container in the test suite — so treat it as a container-integration-test gap if you touch this path.
