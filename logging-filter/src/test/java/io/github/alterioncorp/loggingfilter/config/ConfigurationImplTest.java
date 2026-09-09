@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+@SuppressWarnings("deprecation")
 public class ConfigurationImplTest {
 
 	private FilterConfig filterConfig;
